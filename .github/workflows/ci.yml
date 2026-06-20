@@ -156,6 +156,7 @@ jobs:
         run: |
           gh release create "${{ steps.assemble.outputs.tag }}" \
             release/* \
+            --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "${{ steps.assemble.outputs.version }}" \
             --notes "Автоматический релиз из main @ ${GITHUB_SHA}. Платформы: Ubuntu (gcc/clang), macOS (clang), Windows (msvc)."
