@@ -115,6 +115,13 @@ jobs:
     permissions:
       contents: write  # нужно для создания релиза и загрузки ассетов
     steps:
+      # gh release create обращается к локальному git-репозиторию, поэтому без
+      # checkout падает с "fatal: not a git repository". Сам код не нужен —
+      # достаточно неглубокого клона (fetch-depth: 1).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v7
         with:
