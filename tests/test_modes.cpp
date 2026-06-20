@@ -3,6 +3,11 @@
 //  - golden-векторы (regression, зафиксированы из реализации);
 //  - валидация дополнения: повреждённый шифртекст / неверные константы дают
 //    PaddingError, а не std::length_error.
+//
+// Важно: имена TEST_CASE — только ASCII. Кириллица в имени теста ломает прогон
+// под Windows: catch_discover_tests сохраняет имя в UTF-8, а ctest передаёт его
+// обратно в фильтр в кодировке консоли (cp866/cp1251) — байты не совпадают,
+// тест «не находится» и помечается как Failed. Поэтому описания — в комментариях.
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -51,7 +56,8 @@ void check_roundtrip(const std::string& mode, std::size_t len) {
 
 }  // namespace
 
-TEST_CASE("Round-trip: перебор длин 0..2*BLOCK для каждого режима", "[modes][roundtrip]") {
+// Round-trip: перебор длин 0..2*BLOCK для каждого режима.
+TEST_CASE("modes: round-trip over lengths 0..2*BLOCK for each mode", "[modes][roundtrip]") {
 	for (const std::string mode : {"ecb", "cbc", "cfb", "ofb"}) {
 		for (std::size_t len = 0; len <= 2 * kBlockBytes; len++) {
 			check_roundtrip(mode, len);
@@ -59,15 +65,16 @@ TEST_CASE("Round-trip: перебор длин 0..2*BLOCK для каждого 
 	}
 }
 
-TEST_CASE("Регрессия: невыровненный вход 57 байт восстанавливается полностью", "[modes][regression]") {
-	// Раньше самодельная схема дополнения теряла последний байт на части
-	// невыровненных длин (в частности 57 -> 56). PKCS#7 это закрывает.
+// Регрессия: раньше самодельная схема дополнения теряла последний байт на части
+// невыровненных длин (в частности 57 -> 56). PKCS#7 это закрывает.
+TEST_CASE("modes: regression - unaligned 57-byte input is fully restored", "[modes][regression]") {
 	for (const std::string mode : {"ecb", "cbc", "cfb", "ofb"}) {
 		check_roundtrip(mode, 57);
 	}
 }
 
-TEST_CASE("Golden-векторы режимов (regression)", "[modes][vectors]") {
+// Golden-векторы режимов (regression).
+TEST_CASE("modes: golden vectors (regression)", "[modes][vectors]") {
 	const Key key = test::fixed_key();
 	const Block iv = test::fixed_iv();
 	const RoundConsts& c = kDefaultRoundConsts;
@@ -87,7 +94,8 @@ TEST_CASE("Golden-векторы режимов (regression)", "[modes][vectors]
 		"3461d658a3ad161c0d003c0c2b51e401ba534aface099fae5aca07b9");
 }
 
-TEST_CASE("Шифртекст некратной блоку длины -> PaddingError", "[modes][validation]") {
+// Шифртекст некратной блоку длины -> PaddingError.
+TEST_CASE("modes: non-block-aligned ciphertext -> PaddingError", "[modes][validation]") {
 	const Key key = test::fixed_key();
 	const Block iv = test::fixed_iv();
 	const RoundConsts& c = kDefaultRoundConsts;
@@ -99,7 +107,8 @@ TEST_CASE("Шифртекст некратной блоку длины -> Paddin
 	REQUIRE_THROWS_AS(modes::ofb_decrypt(bad, key, iv, c), PaddingError);
 }
 
-TEST_CASE("Повреждённый шифртекст -> PaddingError, не length_error", "[modes][validation]") {
+// Повреждённый шифртекст -> PaddingError, не length_error.
+TEST_CASE("modes: corrupted ciphertext -> PaddingError (not length_error)", "[modes][validation]") {
 	const Key key = test::fixed_key();
 	const Block iv = test::fixed_iv();
 	const RoundConsts& c = kDefaultRoundConsts;
@@ -110,7 +119,8 @@ TEST_CASE("Повреждённый шифртекст -> PaddingError, не len
 	REQUIRE_THROWS_AS(modes::cbc_decrypt(ct, key, iv, c), PaddingError);
 }
 
-TEST_CASE("Неверный набор раундовых констант -> PaddingError", "[modes][validation]") {
+// Неверный набор раундовых констант -> PaddingError.
+TEST_CASE("modes: wrong round constants -> PaddingError", "[modes][validation]") {
 	const Key key = test::fixed_key();
 	const Block iv = test::fixed_iv();
 	const std::vector<uint8_t> msg = test::incrementing(50);
@@ -123,9 +133,9 @@ TEST_CASE("Неверный набор раундовых констант -> Pa
 	REQUIRE_THROWS_AS(modes::cbc_decrypt(ct_cbc, key, iv, wrong), PaddingError);
 }
 
-TEST_CASE("Декодирование никогда не бросает std::length_error", "[modes][validation]") {
-	// Гарантия из roadmap: на любом мусоре корректной длины unpad даёт либо
-	// валидный результат, либо PaddingError - но не «молчаливый» length_error.
+// Гарантия из roadmap: на любом мусоре корректной длины unpad даёт либо валидный
+// результат, либо PaddingError - но не «молчаливый» std::length_error.
+TEST_CASE("modes: decrypt never throws std::length_error", "[modes][validation]") {
 	const Key key = test::fixed_key();
 	const Block iv = test::fixed_iv();
 	const RoundConsts& c = kDefaultRoundConsts;
@@ -140,7 +150,7 @@ TEST_CASE("Декодирование никогда не бросает std::le
 		} catch (const PaddingError&) {
 			// допустимо
 		} catch (const std::length_error&) {
-			FAIL("cbc_decrypt бросил std::length_error на мусоре");
+			FAIL("cbc_decrypt threw std::length_error on garbage");
 		}
 	}
 }

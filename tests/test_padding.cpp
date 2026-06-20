@@ -12,7 +12,7 @@
 
 using namespace shacal;
 
-TEST_CASE("pkcs7_pad доводит длину до кратности блоку", "[padding]") {
+TEST_CASE("padding: pkcs7_pad rounds length up to a block multiple", "[padding]") {
 	for (std::size_t len = 0; len <= 2 * kBlockBytes; len++) {
 		std::vector<uint8_t> data = test::incrementing(len);
 		pkcs7_pad(data);
@@ -30,7 +30,7 @@ TEST_CASE("pkcs7_pad доводит длину до кратности блок�
 	}
 }
 
-TEST_CASE("pkcs7_pad + pkcs7_unpad - тождество для любой длины", "[padding]") {
+TEST_CASE("padding: pkcs7_pad + pkcs7_unpad is identity for any length", "[padding]") {
 	for (std::size_t len = 0; len <= 2 * kBlockBytes; len++) {
 		std::vector<uint8_t> data = test::incrementing(len);
 		const std::vector<uint8_t> original = data;
@@ -41,36 +41,36 @@ TEST_CASE("pkcs7_pad + pkcs7_unpad - тождество для любой дли
 	}
 }
 
-TEST_CASE("Длина, кратная блоку, дополняется целым блоком", "[padding]") {
+TEST_CASE("padding: block-aligned length is padded with a whole block", "[padding]") {
 	std::vector<uint8_t> data = test::incrementing(kBlockBytes);
 	pkcs7_pad(data);
 	REQUIRE(data.size() == 2 * kBlockBytes);
 	REQUIRE(data.back() == kBlockBytes);  // добавлен полный блок маркеров
 }
 
-TEST_CASE("pkcs7_unpad отвергает некорректное дополнение", "[padding][errors]") {
-	SECTION("пустой буфер") {
+TEST_CASE("padding: pkcs7_unpad rejects invalid padding", "[padding][errors]") {
+	SECTION("empty buffer") {
 		std::vector<uint8_t> data;
 		REQUIRE_THROWS_AS(pkcs7_unpad(data), PaddingError);
 	}
 
-	SECTION("длина не кратна блоку") {
+	SECTION("length not a multiple of the block") {
 		std::vector<uint8_t> data(kBlockBytes + 1, 0x01);
 		REQUIRE_THROWS_AS(pkcs7_unpad(data), PaddingError);
 	}
 
-	SECTION("маркер == 0") {
+	SECTION("marker == 0") {
 		std::vector<uint8_t> data(kBlockBytes, 0x00);
 		REQUIRE_THROWS_AS(pkcs7_unpad(data), PaddingError);
 	}
 
-	SECTION("маркер больше размера блока") {
+	SECTION("marker larger than the block size") {
 		std::vector<uint8_t> data(kBlockBytes, 0x00);
 		data.back() = static_cast<uint8_t>(kBlockBytes + 1);
 		REQUIRE_THROWS_AS(pkcs7_unpad(data), PaddingError);
 	}
 
-	SECTION("несогласованные байты дополнения") {
+	SECTION("inconsistent padding bytes") {
 		std::vector<uint8_t> data(kBlockBytes, 0x00);
 		data.back() = 0x03;  // заявлено 3 байта дополнения,
 		// но data[size-2] и data[size-3] == 0, а не 3
@@ -78,7 +78,7 @@ TEST_CASE("pkcs7_unpad отвергает некорректное дополн�
 	}
 }
 
-TEST_CASE("pkcs7_pad отвергает некорректный размер блока", "[padding][errors]") {
+TEST_CASE("padding: pkcs7_pad rejects an invalid block size", "[padding][errors]") {
 	std::vector<uint8_t> data = test::incrementing(4);
 	REQUIRE_THROWS_AS(pkcs7_pad(data, 0), InvalidArgument);
 	REQUIRE_THROWS_AS(pkcs7_pad(data, 256), InvalidArgument);

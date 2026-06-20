@@ -46,7 +46,14 @@ std::vector<uint8_t> read_bytes(const fs::path& p) {
 
 // Запуск CLI; возвращает код возврата процесса.
 int run_cli(const std::string& args) {
-	const std::string cmd = std::string("\"") + SHACAL_CLI_PATH + "\" " + args;
+	std::string cmd = std::string("\"") + SHACAL_CLI_PATH + "\" " + args;
+#ifdef _WIN32
+	// cmd.exe /c срезает внешнюю пару кавычек, если строка и начинается, и
+	// заканчивается кавычкой (а у нас так из-за кавычек вокруг путей). Из-за
+	// этого ломаются внутренние кавычки. Обходим, обернув всю команду ещё одной
+	// парой кавычек — её cmd.exe и «съест», сохранив внутренние.
+	cmd = "\"" + cmd + "\"";
+#endif
 	return std::system(cmd.c_str());
 }
 
@@ -76,7 +83,7 @@ std::string words_hex(const Block& iv) {
 
 }  // namespace
 
-TEST_CASE("CLI: выход совпадает с golden-эталоном core", "[cli][vectors]") {
+TEST_CASE("cli: output matches the core golden vectors", "[cli][vectors]") {
 	const fs::path dir = fs::temp_directory_path() / "shacal_cli_vec_test";
 	fs::create_directories(dir);
 
@@ -111,7 +118,7 @@ TEST_CASE("CLI: выход совпадает с golden-эталоном core", 
 	fs::remove_all(dir);
 }
 
-TEST_CASE("CLI: round-trip encrypt -> decrypt через файлы", "[cli][roundtrip]") {
+TEST_CASE("cli: round-trip encrypt -> decrypt through files", "[cli][roundtrip]") {
 	const fs::path dir = fs::temp_directory_path() / "shacal_cli_rt_test";
 	fs::create_directories(dir);
 
