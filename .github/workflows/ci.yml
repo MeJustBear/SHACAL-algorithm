@@ -84,11 +84,11 @@ jobs:
           name: shacal_cli-windows-msvc
           path: build/Release/shacal_cli.exe
 
-  # --- Санитайзеры: только при PR в main (поймать UB/утечки до мёржа) -----
+  # --- Санитайзеры: при PR в main и при push в main (поймать UB/утечки) ----
   sanitizers:
     name: ubuntu-asan-ubsan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - uses: actions/checkout@v7
 
