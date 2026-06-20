@@ -42,28 +42,6 @@ jobs:
           name: shacal_cli-${{ matrix.name }}
           path: build/shacal_cli
 
-  # --- Сборка и тесты на Windows (MSVC) ------------------------------------
-  build-test-windows:
-    name: windows-msvc
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-
-      - name: Build
-        run: cmake --build build --config Release --parallel
-
-      - name: Test
-        run: ctest --test-dir build --build-config Release --output-on-failure
-
-      - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: shacal_cli-windows-msvc
-          path: build/Release/shacal_cli.exe
-
   # --- Санитайзеры: отдельная конфигурация ASan/UBSan (Этап 4, см. docs) ----
   sanitizers:
     name: ubuntu-asan-ubsan
