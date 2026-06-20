@@ -1,8 +1,9 @@
 /build/
+/build-debug/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 *.o
 shacal_cli
 consts.txt
-/docs
+.vscode/
