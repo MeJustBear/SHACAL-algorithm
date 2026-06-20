@@ -2,8 +2,8 @@ name: CI
 
 # Политика запусков:
 #   push в dev/**     -> только тесты на всех платформах (без артефактов);
-#   pull_request -> master -> тесты на всех платформах + санитайзеры (ASan/UBSan);
-#   push в master (в т.ч. после мёржа PR) -> тесты + сборка и публикация
+#   pull_request -> main -> тесты на всех платформах + санитайзеры (ASan/UBSan);
+#   push в main (в т.ч. после мёржа PR) -> тесты + сборка и публикация
 #                        исполняемых файлов для windows, macos, ubuntu-gcc/clang,
 #                        а затем автоматический GitHub Release со всеми сборками.
 #
@@ -15,9 +15,9 @@ name: CI
 
 on:
   push:
-    branches: [ master, 'dev/**' ]
+    branches: [ main, 'dev/**' ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 # Основная (неизменяемая) часть имени релизной сборки. Меняется в одном месте.
 # Итоговое имя ассета: ${RELEASE_PREFIX}<ДД.ММ.ГГ><sha3>_<платформа>.
@@ -48,10 +48,10 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-      # Артефакт публикуем только при push в master (в т.ч. после мёржа PR).
+      # Артефакт публикуем только при push в main (в т.ч. после мёржа PR).
       # Неявный success() гарантирует, что загрузка идёт лишь при зелёной сборке.
       - name: Upload CLI artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: shacal_cli-${{ matrix.name }}
@@ -78,13 +78,13 @@ jobs:
         run: ctest --test-dir build --build-config Release --output-on-failure
 
       - name: Upload CLI artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: shacal_cli-windows-msvc
           path: build/Release/shacal_cli.exe
 
-  # --- Санитайзеры: только при PR в master (поймать UB/утечки до мёржа) -----
+  # --- Санитайзеры: только при PR в main (поймать UB/утечки до мёржа) -----
   sanitizers:
     name: ubuntu-asan-ubsan
     runs-on: ubuntu-latest
@@ -104,14 +104,14 @@ jobs:
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: ctest --test-dir build-asan --output-on-failure
 
-  # --- Релиз: только при push в master, после успешной сборки/тестов --------
+  # --- Релиз: только при push в main, после успешной сборки/тестов --------
   # Собирает все артефакты платформ, переименовывает по схеме
   # ${RELEASE_PREFIX}<ДД.ММ.ГГ><sha3>_<платформа> и публикует GitHub Release.
   release:
     name: release
     runs-on: ubuntu-latest
     needs: [ build-test-unix, build-test-windows ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write  # нужно для создания релиза и загрузки ассетов
     steps:
@@ -158,4 +158,4 @@ jobs:
             release/* \
             --target "$GITHUB_SHA" \
             --title "${{ steps.assemble.outputs.version }}" \
-            --notes "Автоматический релиз из master @ ${GITHUB_SHA}. Платформы: Ubuntu (gcc/clang), macOS (clang), Windows (msvc)."
+            --notes "Автоматический релиз из main @ ${GITHUB_SHA}. Платформы: Ubuntu (gcc/clang), macOS (clang), Windows (msvc)."
