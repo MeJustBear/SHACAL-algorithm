@@ -1,4 +1,4 @@
-# shacal - блочный шифр SHACAL-1 (CLI)
+# Блочный шифр SHACAL-1 (CLI)
 
 [![Build and Test](https://github.com/MeJustBear/SHACAL-algorithm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MeJustBear/SHACAL-algorithm/actions/workflows/ci.yml)
 
