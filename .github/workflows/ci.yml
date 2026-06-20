@@ -1,16 +1,19 @@
 name: CI
 
+# Политика запусков:
+#   push в dev/**     -> только тесты на всех платформах (без артефактов);
+#   pull_request -> master -> тесты на всех платформах + санитайзеры (ASan/UBSan);
+#   push в master (в т.ч. после мёржа PR) -> тесты + сборка и публикация
+#                        исполняемых файлов для windows, macos, ubuntu-gcc/clang.
+#
+# Сборка всё равно нужна для тестов, поэтому различаются лишь условный шаг
+# загрузки артефакта и условный job санитайзеров — двойной сборки нет.
+
 on:
   push:
-    branches:
-      - main
-      - master
-      - 'dev/**'
+    branches: [ master, 'dev/**' ]
   pull_request:
-    branches:
-      - main
-      - master
-      - 'dev/**'
+    branches: [ master ]
 
 jobs:
   # --- Сборка и тесты на Linux/macOS (GCC и Clang) -------------------------
@@ -25,7 +28,7 @@ jobs:
           - { os: ubuntu-latest, cxx: clang++, name: ubuntu-clang }
           - { os: macos-latest,  cxx: clang++, name: macos-clang }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
@@ -36,18 +39,45 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+      # Артефакт публикуем только при push в master (в т.ч. после мёржа PR).
+      # Неявный success() гарантирует, что загрузка идёт лишь при зелёной сборке.
       - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v7
         with:
           name: shacal_cli-${{ matrix.name }}
           path: build/shacal_cli
 
-  # --- Санитайзеры: отдельная конфигурация ASan/UBSan (Этап 4, см. docs) ----
+  # --- Сборка и тесты на Windows (MSVC) ------------------------------------
+  build-test-windows:
+    name: windows-msvc
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      - name: Upload CLI artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v7
+        with:
+          name: shacal_cli-windows-msvc
+          path: build/Release/shacal_cli.exe
+
+  # --- Санитайзеры: только при PR в master (поймать UB/утечки до мёржа) -----
   sanitizers:
     name: ubuntu-asan-ubsan
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure (sanitizers)
         run: cmake -S . -B build-asan -DSHACAL_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug
