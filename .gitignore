@@ -1,0 +1,11 @@
+/build/
+/build-debug/
+/build-asan/
+/build*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.o
+shacal_cli
+consts.txt
+.vscode/
