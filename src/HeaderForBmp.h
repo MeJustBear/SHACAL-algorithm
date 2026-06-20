@@ -2,6 +2,9 @@
 
 #include<iostream>
 #include<fstream>
+#include<cstdint>
+#include<string>
+#include<vector>
 
 #define bmp 19778
 
@@ -68,6 +71,15 @@ BMPINFOHEADER readIH(std::ifstream& stream);
 @brief
 */
 void writeIH(std::ofstream & stream, BMPINFOHEADER bi);
+
+/**
+@brief
+Записывает результат в файл: при preserveBmp сначала пишет заголовки BMP,
+затем слова result как big-endian байты, затем хвост tail (остаток padding'а).
+*/
+void write_output(const std::string& filename, std::vector<uint32_t>& result,
+	bool preserveBmp, const BMPFILEHEADER& fh, const BMPINFOHEADER& ih,
+	const std::vector<uint8_t>& tail);
 
 
 

@@ -8,104 +8,31 @@ using namespace std;
 
 namespace cbc {
 
-	void decrypt(string decryptFileName, vector<uint32_t>& key, string outputFilename, string vectorFilename) {
-		vector<uint32_t>* init = new vector<uint32_t>(BLOCKS_SIZE);
-		read_init_vec((*init), vectorFilename);
-
-		ifstream fin(decryptFileName, ios::binary);
+	void encrypt(const string& inFile, const string& outFile,
+		vector<uint32_t>& key, vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmp, bool stats) {
+		ifstream fin = Open_File_Read(inFile);
+		BMPFILEHEADER fh{};
+		BMPINFOHEADER ih{};
+		size_t startPos = 0;
+		if (preserveBmp) {
+			fin.seekg(0, ios::beg);
+			fh = readFH(fin);
+			ih = readIH(fin);
+			startPos = static_cast<size_t>(fin.tellg());
+		}
 		fin.seekg(0, ios::end);
 		size_t maxsize = fin.tellg();
-		size_t currentPointer = 0;
-		fin.seekg(0, ios::beg);
+		size_t currentPointer = startPos;
+		fin.seekg(startPos, ios::beg);
 		bool param = true;
 		bool paramd = true;
 
-		vector<uint32_t>& addictedKey = key_addiction(key);
-
-		uint32_t* const consts = read_consts();
-
+		vector<uint32_t> addictedKey = key_addiction(key);
+		vector<uint32_t> chain = iv;
 		vector<uint32_t> block(BLOCKS_SIZE);
-
 		vector<uint32_t> result;
 		result.reserve(1000);
-
-		bool label = true;
-
-		while (!fin.eof()) {
-			label = !read_block(fin, block, maxsize, &currentPointer, &param, &paramd);
-
-			if (!paramd) break;
-			vector<uint32_t>& siphrotext = decrypt_block(block, addictedKey, consts);
-
-			transform(siphrotext.begin(), siphrotext.end(), (*init).begin(), siphrotext.begin(), bit_xor<uint32_t>());
-			delete init;
-			init = new vector<uint32_t>(block);
-
-			result.push_back(siphrotext[0]);
-			result.push_back(siphrotext[1]);
-			result.push_back(siphrotext[2]);
-			result.push_back(siphrotext[3]);
-			result.push_back(siphrotext[4]);
-
-			delete &siphrotext;
-
-			if (currentPointer == maxsize) break;
-
-		}
-
-		result.shrink_to_fit();
-
-		fin.close();
-
-		vector<uint8_t>& tmp = finalise_res(result);
-
-		write_result(result, outputFilename);
-		write_result8(tmp, outputFilename);
-
-		delete &addictedKey;
-		delete consts;
-	}
-
-	void encrypt(string destinationFileName, string keyFilename, string outputFilename, string vectorFilename) {
-		ifstream fin(destinationFileName, ios::binary);
-		fin.seekg(0, ios::end);
-		size_t maxsize = fin.tellg();
-		size_t currentPointer = 0;
-		fin.seekg(0, ios::beg);
-		bool param = true;
-		bool paramd = true;
-
-		vector<uint32_t>& key = key_generate();
-		vector<uint32_t>& addictedKey = key_addiction(key);
-
-		ofstream fout(keyFilename);
-		cout << "your key is:\n";
-		for (int8_t i = 0; i < KEY_LENGHT; i++) {
-			fout << hex << key[i] << ' ';
-			cout << hex << key[i] << ' ';
-		}
-		fout.close();
-		fout.clear();
-		cout << endl;
-		key.clear();
-
-		vector<uint32_t>& initVec = vector_init();
-		fout.open(vectorFilename);
-		cout << "your vector is:\n";
-		for (int8_t i = 0; i < BLOCKS_SIZE; i++) {
-			fout << hex << initVec[i] << ' ';
-			cout << hex << initVec[i] << ' ';
-		}
-		fout.close();
-		fout.clear();
-		cout << endl;
-
-		uint32_t* const consts = read_consts();
-		vector<uint32_t> block(BLOCKS_SIZE);
-
-		vector<uint32_t> result;
-		result.reserve(1000);
-
 		vector<uint32_t> input;
 		input.reserve(1000);
 
@@ -113,266 +40,79 @@ namespace cbc {
 		while (labe) {
 			labe = !read_block(fin, block, maxsize, &currentPointer, &param, &paramd);
 
-			input.push_back(block[0]);
-			input.push_back(block[1]);
-			input.push_back(block[2]);
-			input.push_back(block[3]);
-			input.push_back(block[4]);
+			input.insert(input.end(), block.begin(), block.end());
 
-			transform(block.begin(), block.end(), initVec.begin(), block.begin(), bit_xor<uint32_t>());
-
-			vector<uint32_t>& siphrotext = encrypt_block(block, addictedKey, consts);
-			initVec.clear();
-			initVec = siphrotext;
-
-			result.push_back(siphrotext[0]);
-			result.push_back(siphrotext[1]);
-			result.push_back(siphrotext[2]);
-			result.push_back(siphrotext[3]);
-			result.push_back(siphrotext[4]);
-
-			delete &siphrotext;
+			transform(block.begin(), block.end(), chain.begin(), block.begin(), bit_xor<uint32_t>());
+			vector<uint32_t> ct = encrypt_block(block, addictedKey, consts);
+			chain = ct;
+			result.insert(result.end(), ct.begin(), ct.end());
 
 			if (!labe) {
-				siphrotext = create_special_block();
-
-				input.push_back(siphrotext[0]);
-				input.push_back(siphrotext[1]);
-				input.push_back(siphrotext[2]);
-				input.push_back(siphrotext[3]);
-				input.push_back(siphrotext[4]);
-
-				transform(siphrotext.begin(), siphrotext.end(), initVec.begin(), siphrotext.begin(), bit_xor<uint32_t>());
-				siphrotext = encrypt_block(siphrotext, addictedKey, consts);
-				result.push_back(siphrotext[0]);
-				result.push_back(siphrotext[1]);
-				result.push_back(siphrotext[2]);
-				result.push_back(siphrotext[3]);
-				result.push_back(siphrotext[4]);
-				delete &siphrotext;
+				vector<uint32_t> sp = create_special_block();
+				input.insert(input.end(), sp.begin(), sp.end());
+				transform(sp.begin(), sp.end(), chain.begin(), sp.begin(), bit_xor<uint32_t>());
+				sp = encrypt_block(sp, addictedKey, consts);
+				result.insert(result.end(), sp.begin(), sp.end());
 				break;
 			}
-			if (fin.eof()) {
-				break;
-			}
+			if (fin.eof()) break;
 			if (!param) break;
 		}
 
-		delete &initVec;
-
 		result.shrink_to_fit();
-
-		write_result(result, outputFilename);
-
-		correlation(input, result);
-		dispersion(result);
-
-		delete &addictedKey;
-		delete consts;
 		fin.close();
-		fin.clear();
+
+		write_output(outFile, result, preserveBmp, fh, ih, {});
+
+		if (stats) {
+			correlation(input, result);
+			dispersion(result);
+		}
 	}
 
-	void decrypt(ifstream& fin, vector<uint32_t>& key, string outFilename, string vectorFilename) {
-		size_t pos = fin.tellg();
-		fin.seekg(0, ios::beg);
-		BMPFILEHEADER fh = readFH(fin);
-		BMPINFOHEADER ih = readIH(fin);
+	void decrypt(const string& inFile, const string& outFile,
+		vector<uint32_t>& key, vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmp) {
+		ifstream fin = Open_File_Read(inFile);
+		BMPFILEHEADER fh{};
+		BMPINFOHEADER ih{};
+		size_t startPos = 0;
+		if (preserveBmp) {
+			fin.seekg(0, ios::beg);
+			fh = readFH(fin);
+			ih = readIH(fin);
+			startPos = static_cast<size_t>(fin.tellg());
+		}
 		fin.seekg(0, ios::end);
 		size_t maxsize = fin.tellg();
-		size_t currentPointer = pos;
-		fin.seekg(pos, ios::beg);
+		size_t currentPointer = startPos;
+		fin.seekg(startPos, ios::beg);
 		bool param = true;
 		bool paramd = true;
 
-		vector<uint32_t>* init = new vector<uint32_t>(BLOCKS_SIZE);
-		read_init_vec((*init), vectorFilename);
-
-		vector<uint32_t>& addictedKey = key_addiction(key);
-
-		uint32_t* const consts = read_consts();
-
+		vector<uint32_t> addictedKey = key_addiction(key);
+		vector<uint32_t> chain = iv;
 		vector<uint32_t> block(BLOCKS_SIZE);
-
 		vector<uint32_t> result;
 		result.reserve(1000);
 
-		bool label = true;
-
 		while (!fin.eof()) {
-			label = !read_block(fin, block, maxsize, &currentPointer, &param, &paramd);
-
+			read_block(fin, block, maxsize, &currentPointer, &param, &paramd);
 			if (!paramd) break;
-			vector<uint32_t>& siphrotext = decrypt_block(block, addictedKey, consts);
 
-			transform(siphrotext.begin(), siphrotext.end(), (*init).begin(), siphrotext.begin(), bit_xor<uint32_t>());
-			delete init;
-			init = new vector<uint32_t>(block);
-
-			result.push_back(siphrotext[0]);
-			result.push_back(siphrotext[1]);
-			result.push_back(siphrotext[2]);
-			result.push_back(siphrotext[3]);
-			result.push_back(siphrotext[4]);
-
-			delete &siphrotext;
+			vector<uint32_t> pt = decrypt_block(block, addictedKey, consts);
+			transform(pt.begin(), pt.end(), chain.begin(), pt.begin(), bit_xor<uint32_t>());
+			chain = block;
+			result.insert(result.end(), pt.begin(), pt.end());
 
 			if (currentPointer == maxsize) break;
 		}
 
 		result.shrink_to_fit();
-
-
 		fin.close();
-		delete &addictedKey;
-		delete consts;
 
-		vector<uint8_t>& tmp = finalise_res(result);
-
-		ofstream foutp = Open_File_Write(outFilename);
-		writeFH(foutp, fh);
-		writeIH(foutp, ih);
-
-		for (size_t i = 0; i < result.size(); i++) {
-			char c = result[i] >> 24;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << 8) >> 24;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << 16) >> 24;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << 24) >> 24;
-			foutp.write((char*)&c, 1);
-		}
-
-		if (!tmp.empty())
-			for (uint8_t i = 0; i < tmp.size(); i++) {
-				foutp.write((char*)&result[i], 1);
-			}
-		foutp.close();
-	}
-
-	void encrypt(ifstream& fin, string keyFilename, string outFilename, string vectorFilename) {
-		size_t pos = fin.tellg();
-		fin.seekg(0, ios::beg);
-		BMPFILEHEADER fh = readFH(fin);
-		BMPINFOHEADER ih = readIH(fin);
-		fin.seekg(0, ios::end);
-		size_t maxsize = fin.tellg();
-		size_t currentPointer = pos;
-		fin.seekg(pos, ios::beg);
-		bool param = true;
-		bool paramd = true;
-
-		vector<uint32_t>& key = key_generate();
-		vector<uint32_t>& addictedKey = key_addiction(key);
-
-		ofstream fout(keyFilename);
-		cout << "your key is:\n";
-		for (int8_t i = 0; i < KEY_LENGHT; i++) {
-			fout << hex << key[i] << ' ';
-			cout << hex << key[i] << ' ';
-		}
-		fout.close();
-		fout.clear();
-		cout << endl;
-		key.clear();
-
-		vector<uint32_t>& initVec = vector_init();
-		fout.open(vectorFilename);
-		cout << "your vector is:\n";
-		for (int8_t i = 0; i < BLOCKS_SIZE; i++) {
-			fout << hex << initVec[i] << ' ';
-			cout << hex << initVec[i] << ' ';
-		}
-		fout.close();
-		fout.clear();
-		cout << endl;
-
-		uint32_t* const consts = read_consts();
-		vector<uint32_t> block(BLOCKS_SIZE);
-
-		vector<uint32_t> result;
-		result.reserve(1000);
-
-		vector<uint32_t> input;
-		input.reserve(1000);
-
-		bool labe = true;
-		while (labe) {
-
-			labe = !read_block(fin, block, maxsize, &currentPointer, &param, &paramd);
-
-			input.push_back(block[0]);
-			input.push_back(block[1]);
-			input.push_back(block[2]);
-			input.push_back(block[3]);
-			input.push_back(block[4]);
-
-			transform(block.begin(), block.end(), initVec.begin(), block.begin(), bit_xor<uint32_t>());
-
-			vector<uint32_t>& siphrotext = encrypt_block(block, addictedKey, consts);
-			initVec.clear();
-			initVec = siphrotext;
-
-			result.push_back(siphrotext[0]);
-			result.push_back(siphrotext[1]);
-			result.push_back(siphrotext[2]);
-			result.push_back(siphrotext[3]);
-			result.push_back(siphrotext[4]);
-
-			delete &siphrotext;
-
-			if (!labe) {
-				vector<uint32_t>& sipher = create_special_block();
-
-				input.push_back(sipher[0]);
-				input.push_back(sipher[1]);
-				input.push_back(sipher[2]);
-				input.push_back(sipher[3]);
-				input.push_back(sipher[4]);
-
-				sipher = encrypt_block(sipher, addictedKey, consts);
-				transform(sipher.begin(), sipher.end(), initVec.begin(), sipher.begin(), bit_xor<uint32_t>());
-				siphrotext = encrypt_block(siphrotext, addictedKey, consts);
-				result.push_back(sipher[0]);
-				result.push_back(sipher[1]);
-				result.push_back(sipher[2]);
-				result.push_back(sipher[3]);
-				result.push_back(sipher[4]);
-				delete &sipher;
-				break;
-			}
-
-			if (fin.eof()) {
-				break;
-			}
-			if (!param) break;
-		}
-
-		result.shrink_to_fit();
-
-		fin.close();
-		delete consts;
-		delete &addictedKey;
-
-		ofstream foutp = Open_File_Write(outFilename);
-		writeFH(foutp, fh);
-		writeIH(foutp, ih);
-
-		for (size_t i = 0; i < result.size(); i++) {
-			char c = result[i] >> MOVE_RIGHT_F;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << MOVE_RIGHT_T) >> MOVE_RIGHT_F;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << MOVE_RIGHT_S) >> MOVE_RIGHT_F;
-			foutp.write((char*)&c, 1);
-			c = (result[i] << MOVE_RIGHT_F) >> MOVE_RIGHT_F;
-			foutp.write((char*)&c, 1);
-		}
-		foutp.close();
-
-		correlation(input, result);
-		dispersion(result);
+		vector<uint8_t> tail = finalise_res(result);
+		write_output(outFile, result, preserveBmp, fh, ih, tail);
 	}
 
 }

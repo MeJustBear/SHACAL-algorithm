@@ -1,11 +1,13 @@
 #pragma once
 
-#include<vector>
-#include<iostream>
-#include<fstream>
-#include<random>
-#include<chrono>
-#include<math.h>
+#include <array>
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <random>
+#include <chrono>
 
 #define KEY_LENGHT 16
 #define FULL_KEY_LENGHT 80
@@ -19,128 +21,69 @@
 #define CONSTS_SIZE 5
 #define ZERO_BLOCK 19
 
+// Режим сцепления блоков. Выбирается в рантайме (флаг --mode)
+enum class Mode { ECB, CBC, CFB, OFB };
+
+// Дефолтные раундовые константы SHACAL-1 (как в SHA-1).
+// Это НЕ хардкод финального поведения, а лишь значения по умолчанию для штатного
+// режима и воспроизведения тест-векторов. На любом уровне API их можно
+// переопределить
+inline constexpr std::array<uint32_t, 4> kShacal1DefaultRoundConsts = {
+	0x5A827999u, 0x6ED9EBA1u, 0x8F1BBCDCu, 0xCA62C1D6u,
+};
+
+// Все режимы экспонируют одинаковый интерфейс. Алгоритм работает с потоком байт;
+// тип данных (текст/BMP) больше не влияет на логику шифрования. Если нужно
+// сохранить «видимым» заголовок BMP — передаётся preserveBmpHeader.
+//   key    — 16 × uint32_t (512 бит)
+//   iv     — BLOCKS_SIZE × uint32_t (для ECB игнорируется)
+//   consts — указатель на 4 × uint32_t (kShacal1DefaultRoundConsts по умолчанию)
 namespace ecb {
-
-	/**
-	@brief
-	ecb main decrypt function at ecb mode (only for files withot headers).
-	Args:
-	std::string decryptFileName- name of file to decrypt
-	std::vector<uin32_t> key - 16 values vector, which used to encrypt open text
-	All files decrypted with name output.(expansion)
-	*/
-	void decrypt(std::string decryptFileName, std::vector<uint32_t>& key, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	@brief
-	main encrypt function at ecb mode (only for files withot headers)
-	Args:
-	std::string destinationFileName - name of file to encrypt
-	All files encrypted with name output.schacal
-	*/
-	void encrypt(std::string destinationFileName, std::string keyFilename, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	brief
-	main decrypt function at ecb mode (have to prepare stream by reading all headers)
-	std::ifstream& fin - input file stream to read blocks from encrypted file
-	std::vector<uin32_t> key - 16 values vector, which used to encrypt open text
-	All files decrypted with name output.(expansion)
-	*/
-	void decrypt(std::ifstream& instream, std::vector<uint32_t>& key, std::string outFilename, std::string vectorFilename);
-
-	/*@brief
-	main encrypt function at ecb mode (have to prepare stream by reading all headers))
-	*/
-	void encrypt(std::ifstream& fin, std::string keyFilename, std::string outFilename, std::string vectorFilename);
+	void encrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader, bool stats);
+	void decrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader);
 }
 
 namespace cbc {
-
-	/**
-	@brief
-
-	*/
-	void decrypt(std::string decryptFileName, std::vector<uint32_t>& key, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	@brief
-
-	*/
-	void encrypt(std::string destinationFileName, std::string keyFilename, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	brief
-
-	*/
-	void decrypt(std::ifstream& instream, std::vector<uint32_t>& key, std::string outFilename, std::string vectorFilename);
-
-	/*@brief
-
-	*/
-	void encrypt(std::ifstream& fin, std::string keyFilename, std::string outFilename, std::string vectorFilename);
+	void encrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader, bool stats);
+	void decrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader);
 }
 
 namespace cfb {
-
-	/**
-	@brief
-
-	*/
-	void decrypt(std::string decryptFileName, std::vector<uint32_t>& key, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	@brief
-
-	*/
-	void encrypt(std::string destinationFileName, std::string keyFilename, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	brief
-
-	*/
-	void decrypt(std::ifstream& instream, std::vector<uint32_t>& key, std::string outFilename, std::string vectorFilename);
-
-	/*@brief
-
-	*/
-	void encrypt(std::ifstream& fin, std::string keyFilename, std::string outFilename, std::string vectorFilename);
+	void encrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader, bool stats);
+	void decrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader);
 }
 
 namespace ofb {
-
-	/**
-	@brief
-
-	*/
-	void decrypt(std::string decryptFileName, std::vector<uint32_t>& key, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	@brief
-
-	*/
-	void encrypt(std::string destinationFileName, std::string keyFilename, std::string outputFilename, std::string vectorFilename);
-
-	/**
-	brief
-
-	*/
-	void decrypt(std::ifstream& instream, std::vector<uint32_t>& key, std::string outFilename, std::string vectorFilename);
-
-	/*@brief
-
-	*/
-	void encrypt(std::ifstream& fin, std::string keyFilename, std::string outFilename, std::string vectorFilename);
+	void encrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader, bool stats);
+	void decrypt(const std::string& inFile, const std::string& outFile,
+		std::vector<uint32_t>& key, std::vector<uint32_t>& iv,
+		const uint32_t* consts, bool preserveBmpHeader);
 }
 
-/**
-@brief
-have to generate KEY_LENGHT numbers of int32_t
-*/
-std::vector<uint32_t>& key_generate();
+// Генерация ключа (KEY_LENGHT слов) и вектора инициализации (BLOCKS_SIZE слов).
+std::vector<uint32_t> key_generate();
+std::vector<uint32_t> vector_init();
 
-/**
-@brief
-have to generate BLOCKS_SIZE numbers of int32_t
-*/
-std::vector<uint32_t>& vector_init();
+// Чтение/запись последовательности hex-значений (формат: значения через пробел).
+// Используется для файлов ключа, IV и совместимого с consts.txt файла констант.
+std::vector<uint32_t> read_hex_values(const std::string& filename, size_t count);
+void write_hex_values(const std::string& filename, const std::vector<uint32_t>& values);
+
+// Разбор раундовых констант: либо из строки "C0,C1,C2,C3" (--round-consts),
+// либо из файла с четырьмя hex-значениями (--round-consts-file).
+std::array<uint32_t, 4> parse_round_consts(const std::string& csv);
+std::array<uint32_t, 4> read_round_consts_file(const std::string& filename);
