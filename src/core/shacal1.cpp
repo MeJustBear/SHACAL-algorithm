@@ -22,9 +22,7 @@ Schedule expand_key(const Key& key) {
 			w[i] = key[i];
 		}
 		// Унаследованное поведение исходной реализации: ветка начинается с i > 16,
-		// поэтому слово w[16] остаётся нулевым. Это сознательно сохранено, чтобы
-		// не менять поведение шифра (round-trip и совместимость с прежним выходом
-		// для блочного преобразования).
+		// поэтому слово w[16] остаётся нулевым.
 		if (i > kKeyWords) {
 			w[i] = rotl32(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
 		}
@@ -63,7 +61,7 @@ Block decrypt_block(Block block, const Schedule& schedule, const RoundConsts& co
 		const unsigned round = kRounds - 1u - i;
 		const uint32_t next_b = rotl32(c, 2);
 		// Вычитания по модулю 2^32 выражены через сложение с побитовым НЕ (~),
-		// плюс константа 4 — как в исходной decrypt_block.
+		// плюс константа 4 - как в исходной decrypt_block.
 		const uint32_t next_e =
 			~schedule[round] + ~rotl32(b, 5) + ~round_function(next_b, d, e, round) +
 			a + ~consts[round / 20] + 4u;

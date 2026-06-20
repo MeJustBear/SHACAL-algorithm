@@ -8,7 +8,7 @@
 //
 // Слой core не знает про файлы, BMP и std::cout: он работает только с буферами
 // в памяти и сообщает об ошибках через исключения из errors.hpp. Раундовые
-// константы передаются в каждый вызов отдельным аргументом — ядро никогда не
+// константы передаются в каждый вызов отдельным аргументом - ядро никогда не
 // читает consts.txt и не зашивает единственный набор внутрь раундовой функции
 // (см. docs/roadmap.md, раздел про раундовые константы).
 namespace shacal {
@@ -57,9 +57,9 @@ inline uint32_t rotl32(uint32_t value, unsigned bits) {
 }
 
 // Раундовая логическая функция SHACAL-1, выбираемая по номеру раунда:
-//   0–19      — Ch:     (x & y) | (~x & z)
-//   20–39, 60–79 — Parity: x ^ y ^ z
-//   40–59     — Maj:    (x & y) | (x & z) | (y & z)
+//   0–19      - Ch:     (x & y) | (~x & z)
+//   20–39, 60–79 - Parity: x ^ y ^ z
+//   40–59     - Maj:    (x & y) | (x & z) | (y & z)
 uint32_t round_function(uint32_t x, uint32_t y, uint32_t z, unsigned round);
 
 // Развёртка ключа (key schedule): расширяет 16 слов исходного ключа до 80
@@ -67,7 +67,7 @@ uint32_t round_function(uint32_t x, uint32_t y, uint32_t z, unsigned round);
 Schedule expand_key(const Key& key);
 
 // Шифрование/расшифрование одного 160-битного блока (5 слов) за 80 раундов.
-// schedule — результат expand_key, consts — 4 раундовые константы.
+// schedule - результат expand_key, consts - 4 раундовые константы.
 Block encrypt_block(Block block, const Schedule& schedule, const RoundConsts& consts);
 Block decrypt_block(Block block, const Schedule& schedule, const RoundConsts& consts);
 

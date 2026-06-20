@@ -6,7 +6,7 @@
 #include "../shacal1.hpp"
 
 // Режим ECB (Electronic Codebook). Каждый блок шифруется независимо.
-// IV не используется. Дополнение — PKCS#7.
+// IV не используется. Дополнение - PKCS#7.
 namespace shacal::modes {
 
 std::vector<uint8_t> ecb_encrypt(const std::vector<uint8_t>& plaintext,

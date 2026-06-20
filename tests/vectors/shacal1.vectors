@@ -1,0 +1,13 @@
+# Golden-векторы SHACAL-1 (см. README.md в этом каталоге).
+# Формат: ключ=значение, hex без префиксов, нижний регистр.
+# Входы фиксированы: key = байты 00..3f, iv = a0a1a2a3 .., consts = дефолт SHACAL-1.
+
+# --- Блочный примитив: encrypt_block(00010203 04050607 08090a0b 0c0d0e0f 10111213) ---
+block_ct = d4b0a13e b74dd153 88d1c00d 8ac7ab1f 8dd437fd
+
+# --- Режимы: encrypt(сообщение из 50 инкрементных байт 0x00..0x31) ---
+# Результат включает PKCS#7-дополнение, поэтому длина кратна 20 байт (здесь 60).
+ecb = d4b0a13eb74dd15388d1c00d8ac7ab1f8dd437fdf8847942699be438ea15b8fb84f1bb13cc9592bc4798a55717390f2822cd75eff0a279a307fad7ec
+cbc = 44f0a4a8806c6e8205bdbcf79d382ba8f00c57fdbd452401d5d91119d914e526d37f26e204dc89fac17c1284aa1893428f4181c0774ab7548c88db48
+cfb = a064ecc038bfe8a8092dd528ae399363d683b08818c1e06d63e04e292f9399f195ebd6765be04aee7bd16e087d3d134b0fd64e81f05378c9bedb4104
+ofb = a064ecc038bfe8a8092dd528ae399363d683b0883da7094e6c45c89be5b8a6673461d658a3ad161c0d003c0c2b51e401ba534aface099fae5aca07b9

@@ -11,7 +11,7 @@ namespace shacal::cli {
 
 namespace {
 
-// Сумма квадратов четырёх байт слова — как в исходной метрике корреляции.
+// Сумма квадратов четырёх байт слова - как в исходной метрике корреляции.
 double sum_byte_squares(uint32_t word) {
 	const double b0 = static_cast<double>((word >> 24) & 0xFFu);
 	const double b1 = static_cast<double>((word >> 16) & 0xFFu);

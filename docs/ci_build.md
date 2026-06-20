@@ -2,7 +2,7 @@
 
 Документ описывает, как может выглядеть пайплайн непрерывной интеграции для проекта **shacal**: сборка исполняемого файла `shacal_cli` на **Ubuntu** и **Windows** при каждом push (и при pull request) в репозиторий на GitHub.
 
-Реализация предполагается через **[GitHub Actions](https://docs.github.com/en/actions)** — встроенный CI/CD без отдельного сервера.
+Реализация предполагается через **[GitHub Actions](https://docs.github.com/en/actions)** - встроенный CI/CD без отдельного сервера.
 
 ---
 
@@ -15,7 +15,7 @@
 | Артефакты | Сохранить бинарники как downloadable artifacts (опционально) |
 | Быстрая обратная связь | Статус проверки виден в PR и в списке коммитов |
 
-На первом этапе CI **не запускает** приложение с тестовыми данными — только конфигурирует и собирает проект. Smoke-тесты и эталонные векторы можно добавить позже (см. [roadmap.md](roadmap.md)).
+На первом этапе CI **не запускает** приложение с тестовыми данными - только конфигурирует и собирает проект. Smoke-тесты и эталонные векторы можно добавить позже (см. [roadmap.md](roadmap.md)).
 
 ---
 
@@ -67,7 +67,7 @@ docs/
   ci_build.md          # этот документ
 ```
 
-Файл workflow кладётся в `.github/workflows/` — GitHub подхватывает его автоматически после push в default-ветку (обычно `main` или `master`).
+Файл workflow кладётся в `.github/workflows/` - GitHub подхватывает его автоматически после push в default-ветку (обычно `main` или `master`).
 
 ---
 
@@ -109,11 +109,11 @@ on:
 
 **Шаги:**
 
-1. **Checkout** — `actions/checkout@v4`
-2. **Зависимости** — `cmake`, `ninja-build` (или сборка через Make)
-3. **Configure** — out-of-source build в каталоге `build/`
-4. **Build** — `cmake --build build --config Release`
-5. **Upload artifact** — `build/shacal_cli`
+1. **Checkout** - `actions/checkout@v4`
+2. **Зависимости** - `cmake`, `ninja-build` (или сборка через Make)
+3. **Configure** - out-of-source build в каталоге `build/`
+4. **Build** - `cmake --build build --config Release`
+5. **Upload artifact** - `build/shacal_cli`
 
 Пример configure/build:
 
@@ -142,7 +142,7 @@ SHACAL-1 по умолчанию встроены в программу; при 
 
 **Компилятор:** MSVC (Visual Studio Build Tools), подключается через генератор CMake.
 
-**Шаги:** те же по смыслу — checkout, CMake, build, upload.
+**Шаги:** те же по смыслу - checkout, CMake, build, upload.
 
 Рекомендуемый генератор для GitHub-hosted Windows:
 
@@ -269,17 +269,17 @@ steps:
 
 По мере развития проекта (см. [roadmap.md](roadmap.md)) CI можно расширить:
 
-1. **Smoke-тест** — `./shacal_cli --help`, `keygen`/`encrypt`/`decrypt` на временных файлах в `$RUNNER_TEMP`
-2. **Sanitizers** — job на Ubuntu с `-fsanitize=address,undefined`
-3. **Release** — при push тега `v*` прикреплять zip с бинарниками к GitHub Release
-4. **Python-модуль** — отдельный workflow с `pip install .` и `pytest`
+1. **Smoke-тест** - `./shacal_cli --help`, `keygen`/`encrypt`/`decrypt` на временных файлах в `$RUNNER_TEMP`
+2. **Sanitizers** - job на Ubuntu с `-fsanitize=address,undefined`
+3. **Release** - при push тега `v*` прикреплять zip с бинарниками к GitHub Release
+4. **Python-модуль** - отдельный workflow с `pip install .` и `pytest`
 
 ---
 
 ## Краткий чеклист внедрения
 
 1. Создать `.github/workflows/build.yml` по примеру выше
-2. Push в default-ветку — открыть **Actions** и проверить оба job'а
+2. Push в default-ветку - открыть **Actions** и проверить оба job'а
 3. (Опционально) Скачать артефакт и проверить `./shacal_cli --help` локально
 4. (Опционально) Включить required checks в настройках репозитория
 

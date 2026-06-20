@@ -7,7 +7,7 @@
 
 // Режим OFB (Output Feedback). Гамма получается итеративным шифрованием IV:
 // k1 = E(IV), k2 = E(k1), ... Шифрование и расшифрование симметричны.
-// Дополнение — PKCS#7 (для единообразия со всеми режимами).
+// Дополнение - PKCS#7 (для единообразия со всеми режимами).
 namespace shacal::modes {
 
 std::vector<uint8_t> ofb_encrypt(const std::vector<uint8_t>& plaintext,
